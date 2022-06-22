@@ -1,5 +1,19 @@
 {
   "name": "puppeteer-intercept-and-modify-requests",
+  "keywords": [
+    "puppeteer",
+    "intercept",
+    "modify",
+    "request",
+    "chromium",
+    "devtools-protocol",
+    "network",
+    "fetch",
+    "mock",
+    "stub",
+    "testing",
+    "utility"
+  ],
   "bugs": {
     "url": "https://github.com/niieani/puppeteer-intercept-and-modify-requests/issues"
   },

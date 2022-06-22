@@ -3,9 +3,11 @@ import { promisify } from 'util'
 import type { CDPSession, Protocol } from 'puppeteer'
 import { getUrlPatternRegExp } from './urlPattern'
 
+export { getUrlPatternRegExp }
+
 const STATUS_CODE_OK = 200
 
-type ModifiedResponse =
+export type ModifiedResponse =
   | ((
       | {
           responseCode?: number
@@ -20,7 +22,7 @@ type ModifiedResponse =
     })
   | void
 
-type ModifiedRequest =
+export type ModifiedRequest =
   | (ModifiedResponse &
       Omit<
         Protocol.Fetch.ContinueRequestRequest,
@@ -40,7 +42,7 @@ export type Interception = Omit<Protocol.Fetch.RequestPattern, 'requestStage'> &
     }) => ModifiedRequest | Promise<ModifiedRequest>
   }
 
-type InterceptionWithUrlPatternRegExp = Interception & {
+export type InterceptionWithUrlPatternRegExp = Interception & {
   urlPatternRegExp: RegExp
 }
 
@@ -90,6 +92,11 @@ export class RequestInterceptionManager {
 
   async disable(): Promise<void> {
     return this.#client.send('Fetch.disable')
+  }
+
+  async clear() {
+    this.interceptions.clear()
+    await this.disable()
   }
 
   onRequestPausedEvent = async (event: Protocol.Fetch.RequestPausedEvent) => {
