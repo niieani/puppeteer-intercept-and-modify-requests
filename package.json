@@ -83,7 +83,7 @@
   },
   "devDependencies": {
     "@niieani/scaffold": "^1.5.5",
-    "puppeteer": "^14.4.1"
+    "puppeteer": "^15.5.0"
   },
   "packageManager": "yarn@3.2.1",
   "publishConfig": {
