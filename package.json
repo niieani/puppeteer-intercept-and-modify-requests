@@ -85,7 +85,7 @@
     "@niieani/scaffold": "^1.5.5",
     "puppeteer": "^14.4.1"
   },
-  "packageManager": "yarn@3.2.1",
+  "packageManager": "yarn@3.2.3",
   "publishConfig": {
     "access": "public"
   },
