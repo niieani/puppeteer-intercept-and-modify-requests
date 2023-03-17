@@ -82,7 +82,7 @@
     "tagFormat": "${version}"
   },
   "devDependencies": {
-    "@niieani/scaffold": "^1.5.5",
+    "@niieani/scaffold": "^1.5.22",
     "puppeteer": "^14.4.1"
   },
   "packageManager": "yarn@3.2.1",
