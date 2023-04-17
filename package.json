@@ -82,10 +82,10 @@
     "tagFormat": "${version}"
   },
   "devDependencies": {
-    "@niieani/scaffold": "^1.5.5",
-    "puppeteer": "^14.4.1"
+    "@niieani/scaffold": "^1.6.7",
+    "puppeteer-core": "^19.9.0"
   },
-  "packageManager": "yarn@3.2.1",
+  "packageManager": "yarn@3.5.0",
   "publishConfig": {
     "access": "public"
   },
