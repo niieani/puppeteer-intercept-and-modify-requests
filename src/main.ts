@@ -111,7 +111,10 @@ export class RequestInterceptionManager {
       if (resourceType && resourceType !== event.resourceType) continue
       if (urlPattern && !urlPatternRegExp.test(request.url)) continue
 
-      if (!responseStatusCode) {
+      if (
+        !responseStatusCode ||
+        (responseStatusCode >= 300 && responseStatusCode < 400)
+      ) {
         // handling a request
         const { delay, ...modification } =
           (await modifyRequest?.({ event })) ?? {}
