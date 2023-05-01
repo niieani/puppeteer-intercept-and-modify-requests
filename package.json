@@ -56,7 +56,7 @@
     "prepare": "rrun husky install .config/husky && beemo create-config",
     "release": "beemo run-script release",
     "test": "yarn test:format && yarn test:types && yarn test:lint && yarn test:code",
-    "test:code": "true",
+    "test:code": "yarn rrun jest",
     "test:format": "yarn rrun prettier --check \"./{src,tests,.config}/**/!(*.d).{.js,jsx,ts,tsx,json,md}\"",
     "test:lint": "rrun eslint 'src/**/*.{js,jsx,ts,tsx}'",
     "test:types": "yarn rrun tsc --noEmit"
@@ -83,7 +83,9 @@
   },
   "devDependencies": {
     "@niieani/scaffold": "^1.6.7",
-    "puppeteer-core": "^19.9.0"
+    "get-port": "^5.1.1",
+    "puppeteer": "^19.11.1",
+    "puppeteer-core": "^19.11.1"
   },
   "packageManager": "yarn@3.5.0",
   "publishConfig": {
