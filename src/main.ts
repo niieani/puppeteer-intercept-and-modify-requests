@@ -62,14 +62,14 @@ const wait = promisify(setTimeout)
 export class RequestInterceptionManager {
   interceptions: Map<string, InterceptionWithUrlPatternRegExp> = new Map()
   #client: CDPSession
+  #requestPausedHandler: (event: Protocol.Fetch.RequestPausedEvent) => void
+  #isInstalled = false
+
   // eslint-disable-next-line no-console
   constructor(client: CDPSession, { onError = console.error } = {}) {
     this.#client = client
-    client.on(
-      'Fetch.requestPaused',
-      (event: Protocol.Fetch.RequestPausedEvent) =>
-        void this.onRequestPausedEvent(event).catch(onError),
-    )
+    this.#requestPausedHandler = (event: Protocol.Fetch.RequestPausedEvent) =>
+      void this.onRequestPausedEvent(event).catch(onError)
   }
 
   async intercept(...interceptions: Interception[]) {
@@ -90,6 +90,7 @@ export class RequestInterceptionManager {
   }
 
   async enable(): Promise<void> {
+    this.#install()
     return this.#client.send('Fetch.enable', {
       handleAuthRequests: false,
       patterns: [...this.interceptions.values()].map(
@@ -103,7 +104,12 @@ export class RequestInterceptionManager {
   }
 
   async disable(): Promise<void> {
-    return this.#client.send('Fetch.disable')
+    this.#uninstall()
+    try {
+      await this.#client.send('Fetch.disable')
+    } catch {
+      // ignore (most likely session closed)
+    }
   }
 
   async clear() {
@@ -201,6 +207,20 @@ export class RequestInterceptionManager {
         })
       }
     }
+  }
+
+  #install() {
+    if (this.#isInstalled) return
+
+    this.#client.on('Fetch.requestPaused', this.#requestPausedHandler)
+    this.#isInstalled = true
+  }
+
+  #uninstall() {
+    if (!this.#isInstalled) return
+
+    this.#client.off('Fetch.requestPaused', this.#requestPausedHandler)
+    this.#isInstalled = false
   }
 
   async #getResponseBody(

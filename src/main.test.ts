@@ -12,6 +12,8 @@ let server: Server
 let browser: puppeteerType.Browser
 let page: puppeteerType.Page
 let client: puppeteerType.CDPSession
+let browserClient: puppeteerType.CDPSession
+let manager: RequestInterceptionManager
 
 const host = 'localhost'
 let port = 3_000
@@ -37,6 +39,7 @@ describe('RequestInterceptionManager', () => {
 
   beforeAll(async () => {
     browser = await puppeteer.launch()
+    browserClient = await browser.target().createCDPSession()
   })
 
   afterAll(async () => {
@@ -51,6 +54,7 @@ describe('RequestInterceptionManager', () => {
   afterEach(async () => {
     await page.close()
     await stopServer()
+    await manager.clear()
   })
 
   describe.each`
@@ -66,7 +70,7 @@ describe('RequestInterceptionManager', () => {
           res.end('Hello, world!')
         })
 
-        const manager = new RequestInterceptionManager(client)
+        manager = new RequestInterceptionManager(client)
         await manager.intercept({
           urlPattern: '*',
           modifyResponse: ({ body }) => ({
@@ -101,7 +105,7 @@ describe('RequestInterceptionManager', () => {
           }
         })
 
-        const manager = new RequestInterceptionManager(client)
+        manager = new RequestInterceptionManager(client)
         await manager.intercept({
           urlPattern: '*/original',
           modifyRequest: ({ event }) => ({
@@ -128,7 +132,7 @@ describe('RequestInterceptionManager', () => {
           res.end('Hello, world!')
         })
 
-        const manager = new RequestInterceptionManager(client)
+        manager = new RequestInterceptionManager(client)
         await manager.intercept({
           urlPattern: 'non-existent-url/*',
           modifyResponse: ({ body }) => ({
@@ -155,7 +159,7 @@ describe('RequestInterceptionManager', () => {
           res.end()
         })
 
-        const manager = new RequestInterceptionManager(client)
+        manager = new RequestInterceptionManager(client)
         await manager.intercept({
           urlPattern: '*',
           modifyResponse: () => ({
@@ -190,7 +194,7 @@ describe('RequestInterceptionManager', () => {
           }
         })
 
-        const manager = new RequestInterceptionManager(client)
+        manager = new RequestInterceptionManager(client)
         await manager.intercept({
           urlPattern: '*/redirected',
           modifyResponse: ({ body, event: { responseStatusCode } }) => ({
@@ -238,7 +242,7 @@ describe('RequestInterceptionManager', () => {
           res.end('It is forbidden')
         })
 
-        const manager = new RequestInterceptionManager(client)
+        manager = new RequestInterceptionManager(client)
         await manager.intercept({
           urlPattern: '*',
           modifyResponse: ({ body }) => ({
@@ -278,7 +282,7 @@ describe('RequestInterceptionManager', () => {
           }
         })
 
-        const manager = new RequestInterceptionManager(client)
+        manager = new RequestInterceptionManager(client)
         await manager.intercept(
           {
             urlPattern: '*/first',
@@ -312,6 +316,63 @@ describe('RequestInterceptionManager', () => {
 
         expect(firstResponse).toBe('First intercepted')
         expect(secondResponse).toBe('Second intercepted')
+      })
+
+      it('should intercept and modify requests on new tabs', async () => {
+        await startServer((req, res) => {
+          if (req.url === '/') {
+            res.writeHead(200, { 'Content-Type': 'text/html' })
+            res.end('<a href="/new-tab" target="_blank">Open new tab</a>')
+          } else if (req.url === '/new-tab') {
+            res.writeHead(200, { 'Content-Type': 'text/plain' })
+            res.end('Hello, new tab!')
+          } else {
+            res.writeHead(404, { 'Content-Type': 'text/plain' })
+            res.end('Not found')
+          }
+        })
+
+        // Set up request interception for the initial page
+        manager = new RequestInterceptionManager(browserClient)
+        await manager.intercept({
+          urlPattern: '*',
+          modifyResponse: ({ body }) =>
+            body
+              ? {
+                  body: body.replace('new tab', 'new tab intercepted'),
+                }
+              : undefined,
+          ...options,
+        })
+
+        await page.goto(`http://localhost:${port}`)
+
+        // Listen for a new page to be opened
+        const newPagePromise = browser
+          .waitForTarget(
+            (target) =>
+              target.type() === 'page' &&
+              target.url() === `http://localhost:${port}/new-tab`,
+          )
+          .then((target) => target.page())
+          .then((newPage) => newPage!)
+
+        // Click the link to open a new tab
+        await page.click('a')
+
+        // Wait for the new page to be opened
+        const newPage = await newPagePromise
+
+        // Check if the request on the new tab was intercepted and modified
+        const newText = await newPage.evaluate(() => document.body.textContent)
+        expect(newText).toBe('Hello, new tab intercepted!')
+
+        const newResponse = await newPage.evaluate(async (url) => {
+          const response = await fetch(url)
+          return response.text()
+        }, `http://localhost:${port}/new-tab`)
+
+        expect(newResponse).toBe('Hello, new tab intercepted!')
       })
     },
   )
@@ -349,7 +410,7 @@ describe('RequestInterceptionManager', () => {
       sendNextMessage()
     })
 
-    const manager = new RequestInterceptionManager(client)
+    manager = new RequestInterceptionManager(client)
     await manager.intercept({
       urlPattern: '*/stream',
       // Replace "world" with "Jest" in the response chunk

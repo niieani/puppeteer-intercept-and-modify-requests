@@ -31,7 +31,7 @@ In summary, the `puppeteer-intercept-and-modify-requests` library offers a more 
 npm install puppeteer-intercept-and-modify-requests
 ```
 
-## Usage
+## Example Usage
 
 To modify intercepted requests:
 
@@ -40,12 +40,18 @@ import { RequestInterceptionManager } from 'puppeteer-intercept-and-modify-reque
 
 // assuming 'page' is your Puppeteer page object
 const client = await page.target().createCDPSession()
+// note: if you want to intercept requests on ALL tabs, instead use:
+// const client = await browser.target().createCDPSession()
+
 const interceptManager = new RequestInterceptionManager(client)
 
 await interceptManager.intercept(
   {
+    // specify the URL pattern to intercept:
     urlPattern: `https://example.com/*`,
+    // optionally filter by resource type:
     resourceType: 'Document',
+    // specify how you want to modify the response (may be async):
     modifyResponse({ body }) {
       return {
         // replace break lines with horizontal lines:
@@ -55,6 +61,7 @@ await interceptManager.intercept(
   },
   {
     urlPattern: '*/api/v4/user.json',
+    // specify how you want to modify the response (may be async):
     modifyResponse({ body }) {
       const parsed = JSON.parse(body)
       // set role property to 'admin'
@@ -98,7 +105,7 @@ await interceptManager.intercept(
 
 ## Usage Examples
 
-Here's an example of how to use the `RequestInterceptionManager` to intercept and modify a request:
+Here's an example of how to use the `RequestInterceptionManager` to intercept and modify a request and a response:
 
 ```ts
 import puppeteer from 'puppeteer'
@@ -140,44 +147,6 @@ main()
 This example modifies the request by adding a custom header and modifies the response by replacing all occurrences of the word "example" with "intercepted".
 
 ## Advanced Usage
-
-### Streaming and Modifying Response Chunks
-
-You can also stream and modify response chunks using the `streamResponse` and `modifyResponseChunk` options. Here's an example of how to do this:
-
-```ts
-import puppeteer from 'puppeteer'
-import {
-  RequestInterceptionManager,
-  Interception,
-} from 'puppeteer-intercept-and-modify-requests'
-
-async function main() {
-  const browser = await puppeteer.launch()
-  const page = await browser.newPage()
-
-  const client = await page.target().createCDPSession()
-  const requestInterceptionManager = new RequestInterceptionManager(client)
-
-  const interceptionConfig: Interception = {
-    urlPattern: 'https://example.com/*',
-    streamResponse: true,
-    modifyResponseChunk: async ({ event, data }) => {
-      // Modify response chunk
-      const modifiedData = data.replace(/example/gi, 'intercepted')
-      return { ...event, data: modifiedData }
-    },
-  }
-
-  await requestInterceptionManager.intercept(interceptionConfig)
-  await page.goto('https://example.com')
-  await browser.close()
-}
-
-main()
-```
-
-In this example, the response is streamed and each response chunk has all occurrences of the word "example" replaced with "intercepted".
 
 ### Applying Delay
 
@@ -296,3 +265,53 @@ main()
 ```
 
 In this example, the request for the specified URL pattern is blocked with the error reason "BlockedByClient".
+
+### Intercepting network requests from all Pages (rather than just the one)
+
+When creating the `RequestInterceptionManager` instance, you can pass in the `client` object from the `CDPSession` of the `Browser` object. This will allow you to intercept requests from all the pages rather than just the one. Here's an example of how to do this:
+
+```ts
+// intercept requests on ALL tabs, instead use:
+const client = await browser.target().createCDPSession()
+const interceptManager = new RequestInterceptionManager(client)
+
+// ...
+```
+
+### Streaming and Modifying Response Chunks
+
+You can also stream and modify response chunks using the `streamResponse` and `modifyResponseChunk` options. Here's an example of how to do this:
+
+```ts
+import puppeteer from 'puppeteer'
+import {
+  RequestInterceptionManager,
+  Interception,
+} from 'puppeteer-intercept-and-modify-requests'
+
+async function main() {
+  const browser = await puppeteer.launch()
+  const page = await browser.newPage()
+
+  const client = await page.target().createCDPSession()
+  const requestInterceptionManager = new RequestInterceptionManager(client)
+
+  const interceptionConfig: Interception = {
+    urlPattern: 'https://example.com/*',
+    streamResponse: true,
+    modifyResponseChunk: async ({ event, data }) => {
+      // Modify response chunk
+      const modifiedData = data.replace(/example/gi, 'intercepted')
+      return { ...event, data: modifiedData }
+    },
+  }
+
+  await requestInterceptionManager.intercept(interceptionConfig)
+  await page.goto('https://example.com')
+  await browser.close()
+}
+
+main()
+```
+
+In this example, the response is streamed and each response chunk has all occurrences of the word "example" replaced with "intercepted".
