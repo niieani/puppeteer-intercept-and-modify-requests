@@ -83,7 +83,7 @@
   },
   "devDependencies": {
     "@niieani/scaffold": "^1.6.7",
-    "get-port": "^5.1.1",
+    "get-port": "^6.1.2",
     "puppeteer": "^19.11.1",
     "puppeteer-core": "^19.11.1"
   },
