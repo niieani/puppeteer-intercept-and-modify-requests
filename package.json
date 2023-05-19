@@ -49,7 +49,7 @@
   "scripts": {
     "build": "yarn build:cjs && yarn build:esm",
     "build:cjs": "yarn rrun tsc --outDir cjs --module commonjs --target es2018",
-    "build:esm": "yarn rrun tsc --outDir esm --module esnext --target es2018",
+    "build:esm": "yarn rrun tsc --outDir esm --module esnext --target es2018 && echo '{\"name\": \"puppeteer-intercept-and-modify-requests\", \"type\": \"module\"}' > esm/package.json",
     "clean": "git clean -dfX --exclude=node_modules src && beemo typescript:sync-project-refs",
     "format": "yarn rrun prettier --write \"./{src,tests,.config}/**/!(*.d).{.js,jsx,ts,tsx,json,md}\"",
     "postinstallDev": "yarn prepare",
