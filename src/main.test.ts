@@ -9,6 +9,7 @@ import { RequestInterceptionManager } from './main'
 const puppeteer = _puppeteer as unknown as typeof puppeteerType
 
 let server: Server
+let port = 3_000
 let browser: puppeteerType.Browser
 let page: puppeteerType.Page
 let client: puppeteerType.CDPSession
@@ -16,13 +17,15 @@ let browserClient: puppeteerType.CDPSession
 let manager: RequestInterceptionManager
 
 const host = 'localhost'
-let port = 3_000
+const serverHandlerRef: { current?: http.RequestListener } = {}
 
-const startServer = async (handler: http.RequestListener): Promise<void> => {
-  // eslint-disable-next-line require-atomic-updates
-  port = await getPort({ host, port })
+const startServer = async (): Promise<{ server: Server; port: number }> => {
+  const usedPort = await getPort({ host, port })
   return new Promise((resolve) => {
-    server = http.createServer(handler).listen(port, host, resolve)
+    const s = http.createServer((req, res) => {
+      serverHandlerRef.current?.(req, res)
+    })
+    s.listen(usedPort, host, () => void resolve({ server: s, port: usedPort }))
   })
 }
 
@@ -32,17 +35,20 @@ const stopServer = (): Promise<void> =>
       if (err) reject(err)
       else resolve()
     })
+    server.closeAllConnections()
   })
 
 describe('RequestInterceptionManager', () => {
   jest.setTimeout(5_000)
 
   beforeAll(async () => {
-    browser = await puppeteer.launch()
+    browser = await puppeteer.launch({ headless: 'new' })
     browserClient = await browser.target().createCDPSession()
+    ;({ port, server } = await startServer())
   })
 
   afterAll(async () => {
+    await stopServer()
     await browser.close()
   })
 
@@ -53,7 +59,6 @@ describe('RequestInterceptionManager', () => {
 
   afterEach(async () => {
     await page.close()
-    await stopServer()
     await manager.clear()
   })
 
@@ -65,10 +70,10 @@ describe('RequestInterceptionManager', () => {
     'with streamResponse: $streamResponse',
     (options: { streamResponse: boolean }) => {
       it('should intercept and modify response', async () => {
-        await startServer((req, res) => {
+        serverHandlerRef.current = (req, res) => {
           res.writeHead(200, { 'Content-Type': 'text/plain' })
           res.end('Hello, world!')
-        })
+        }
 
         manager = new RequestInterceptionManager(client)
         await manager.intercept({
@@ -92,7 +97,7 @@ describe('RequestInterceptionManager', () => {
       })
 
       it('should intercept and modify request', async () => {
-        await startServer((req, res) => {
+        serverHandlerRef.current = (req, res) => {
           if (req.url === '/') {
             res.writeHead(200, { 'Content-Type': 'text/plain' })
             res.end('Original request')
@@ -103,7 +108,7 @@ describe('RequestInterceptionManager', () => {
             res.writeHead(404, { 'Content-Type': 'text/plain' })
             res.end('Not found')
           }
-        })
+        }
 
         manager = new RequestInterceptionManager(client)
         await manager.intercept({
@@ -127,10 +132,10 @@ describe('RequestInterceptionManager', () => {
       })
 
       it('should not intercept requests not matching urlPattern', async () => {
-        await startServer((req, res) => {
+        serverHandlerRef.current = (req, res) => {
           res.writeHead(200, { 'Content-Type': 'text/plain' })
           res.end('Hello, world!')
-        })
+        }
 
         manager = new RequestInterceptionManager(client)
         await manager.intercept({
@@ -154,10 +159,10 @@ describe('RequestInterceptionManager', () => {
       })
 
       it('should handle intercepting a 304 response', async () => {
-        await startServer((req, res) => {
+        serverHandlerRef.current = (req, res) => {
           res.writeHead(304, { 'Content-Type': 'text/plain' })
           res.end()
-        })
+        }
 
         manager = new RequestInterceptionManager(client)
         await manager.intercept({
@@ -182,7 +187,7 @@ describe('RequestInterceptionManager', () => {
       })
 
       it('should handle intercepting a redirect response', async () => {
-        await startServer((req, res) => {
+        serverHandlerRef.current = (req, res) => {
           if (req.url === '/redirected') {
             res.writeHead(200, { 'Content-Type': 'text/plain' })
             res.end('Works')
@@ -192,7 +197,7 @@ describe('RequestInterceptionManager', () => {
             })
             res.end()
           }
-        })
+        }
 
         manager = new RequestInterceptionManager(client)
         await manager.intercept({
@@ -237,10 +242,10 @@ describe('RequestInterceptionManager', () => {
       })
 
       it('should handle different status codes', async () => {
-        await startServer((req, res) => {
+        serverHandlerRef.current = (req, res) => {
           res.writeHead(403, { 'Content-Type': 'text/plain' })
           res.end('It is forbidden')
-        })
+        }
 
         manager = new RequestInterceptionManager(client)
         await manager.intercept({
@@ -269,7 +274,7 @@ describe('RequestInterceptionManager', () => {
       })
 
       it('should handle multiple interception rules', async () => {
-        await startServer((req, res) => {
+        serverHandlerRef.current = (req, res) => {
           if (req.url === '/first') {
             res.writeHead(200, { 'Content-Type': 'text/plain' })
             res.end('First')
@@ -280,7 +285,7 @@ describe('RequestInterceptionManager', () => {
             res.writeHead(404, { 'Content-Type': 'text/plain' })
             res.end('Not found')
           }
-        })
+        }
 
         manager = new RequestInterceptionManager(client)
         await manager.intercept(
@@ -319,7 +324,7 @@ describe('RequestInterceptionManager', () => {
       })
 
       it('should intercept and modify requests on new tabs', async () => {
-        await startServer((req, res) => {
+        serverHandlerRef.current = (req, res) => {
           if (req.url === '/') {
             res.writeHead(200, { 'Content-Type': 'text/html' })
             res.end('<a href="/new-tab" target="_blank">Open new tab</a>')
@@ -330,7 +335,7 @@ describe('RequestInterceptionManager', () => {
             res.writeHead(404, { 'Content-Type': 'text/plain' })
             res.end('Not found')
           }
-        })
+        }
 
         // Set up request interception for the initial page
         manager = new RequestInterceptionManager(browserClient)
@@ -372,6 +377,8 @@ describe('RequestInterceptionManager', () => {
           return response.text()
         }, `http://localhost:${port}/new-tab`)
 
+        await newPage.close()
+
         expect(newResponse).toBe('Hello, new tab intercepted!')
       })
     },
@@ -382,7 +389,7 @@ describe('RequestInterceptionManager', () => {
     let messageId = 0
 
     // Set up an EventStream server that sends a series of messages
-    await startServer((req, res) => {
+    serverHandlerRef.current = (req, res) => {
       if (req.url === '/') {
         res.writeHead(200, { 'Content-Type': 'text/plain' })
         res.end('Hello!')
@@ -408,7 +415,7 @@ describe('RequestInterceptionManager', () => {
       sendNextMessage()
       sendNextMessage()
       sendNextMessage()
-    })
+    }
 
     manager = new RequestInterceptionManager(client)
     await manager.intercept({
