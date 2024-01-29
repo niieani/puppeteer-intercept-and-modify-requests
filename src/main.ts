@@ -121,6 +121,7 @@ export class RequestInterceptionManager {
   onRequestPausedEvent = async (event: Protocol.Fetch.RequestPausedEvent) => {
     const { requestId, responseStatusCode, request, responseErrorReason } =
       event
+
     for (const {
       modifyRequest,
       modifyResponse,
@@ -133,7 +134,11 @@ export class RequestInterceptionManager {
       if (resourceType && resourceType !== event.resourceType) continue
       if (urlPattern && !urlPatternRegExp.test(request.url)) continue
 
-      if (!responseStatusCode) {
+      const isResponse = Boolean(
+        event.responseHeaders ?? responseStatusCode ?? responseErrorReason,
+      )
+
+      if (!isResponse) {
         // handling a request
         const { delay, headers, method, postData, url, ...modification } =
           (await modifyRequest?.({ event })) ?? {}
@@ -199,7 +204,7 @@ export class RequestInterceptionManager {
 
         await this.#client.send('Fetch.fulfillRequest', {
           requestId,
-          responseCode: responseStatusCode,
+          responseCode: responseStatusCode ?? STATUS_CODE_OK,
           responseHeaders: event.responseHeaders,
           ...modification,
           body: modification.body
