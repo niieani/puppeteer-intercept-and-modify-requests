@@ -148,6 +148,28 @@ This example modifies the request by adding a custom header and modifies the res
 
 ## Advanced Usage
 
+### Stubbing Responses at Request Time
+
+You can completely bypass the server and immediately return a stubbed response by using the `modifyRequest` function. This is useful when you want to simulate responses without actually making network requests:
+
+```ts
+const interceptionConfig: Interception = {
+  urlPattern: 'https://api.example.com/*',
+  modifyRequest: async () => ({
+    responseCode: 200,
+    responseHeaders: [{ name: 'Content-Type', value: 'application/json' }],
+    body: JSON.stringify({
+      status: 'success',
+      data: { message: 'This is a stubbed response' },
+    }),
+  }),
+}
+
+await requestInterceptionManager.intercept(interceptionConfig)
+```
+
+When you provide a `body` or `responseCode` in the `modifyRequest` function, the request will not be sent to the server at all. Instead, the specified response will be returned immediately. This is more efficient than letting the request reach the server when you know you want to return mock data.
+
 ### Applying Delay
 
 You can apply a delay to a request or response using the `delay` property in the `modifyRequest` or `modifyResponse` functions. Here's an example of how to add a delay to a request:

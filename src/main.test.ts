@@ -381,6 +381,30 @@ describe('RequestInterceptionManager', () => {
 
         expect(newResponse).toBe('Hello, new tab intercepted!')
       })
+
+      it('should intercept a request and send a stubbed body', async () => {
+        // eslint-disable-next-line jest/prefer-spy-on
+        serverHandlerRef.current = jest.fn((req, res) => {
+          res.writeHead(200, { 'Content-Type': 'text/plain' })
+          res.end('Original response')
+        })
+
+        manager = new RequestInterceptionManager(client)
+        await manager.intercept({
+          urlPattern: '*',
+          modifyRequest: () => ({
+            responseCode: 200,
+            responseHeaders: [{ name: 'Content-Type', value: 'text/plain' }],
+            body: 'Stubbed response',
+          }),
+          ...options,
+        })
+
+        await page.goto(`http://localhost:${port}`)
+        const text = await page.evaluate(() => document.body.textContent)
+        expect(text).toBe('Stubbed response')
+        expect(serverHandlerRef.current).not.toHaveBeenCalled()
+      })
     },
   )
 
