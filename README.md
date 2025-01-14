@@ -41,7 +41,7 @@ import { RequestInterceptionManager } from 'puppeteer-intercept-and-modify-reque
 // assuming 'page' is your Puppeteer page object
 const client = await page.createCDPSession()
 // note: if you want to intercept requests on ALL tabs, instead use:
-// const client = await browser.createCDPSession()
+// const client = await browser.target().createCDPSession()
 
 const interceptManager = new RequestInterceptionManager(client)
 
@@ -294,7 +294,7 @@ When creating the `RequestInterceptionManager` instance, you can pass in the `cl
 
 ```ts
 // intercept requests on ALL tabs, instead use:
-const client = await browser.createCDPSession()
+const client = await browser.target().createCDPSession()
 const interceptManager = new RequestInterceptionManager(client)
 
 // ...
