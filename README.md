@@ -39,7 +39,7 @@ To modify intercepted requests:
 import { RequestInterceptionManager } from 'puppeteer-intercept-and-modify-requests'
 
 // assuming 'page' is your Puppeteer page object
-const client = await page.target().createCDPSession()
+const client = await page.createCDPSession()
 // note: if you want to intercept requests on ALL tabs, instead use:
 // const client = await browser.target().createCDPSession()
 
@@ -118,7 +118,7 @@ async function main() {
   const browser = await puppeteer.launch()
   const page = await browser.newPage()
 
-  const client = await page.target().createCDPSession()
+  const client = await page.createCDPSession()
   const requestInterceptionManager = new RequestInterceptionManager(client)
 
   const interceptionConfig: Interception = {
@@ -185,7 +185,7 @@ async function main() {
   const browser = await puppeteer.launch()
   const page = await browser.newPage()
 
-  const client = await page.target().createCDPSession()
+  const client = await page.createCDPSession()
   const requestInterceptionManager = new RequestInterceptionManager(client)
 
   const interceptionConfig: Interception = {
@@ -223,7 +223,7 @@ async function main() {
   const browser = await puppeteer.launch()
   const page = await browser.newPage()
 
-  const client = await page.target().createCDPSession()
+  const client = await page.createCDPSession()
   const requestInterceptionManager = new RequestInterceptionManager(client, {
     onError: (error) => {
       console.error('Request interception error:', error)
@@ -265,7 +265,7 @@ async function main() {
   const browser = await puppeteer.launch()
   const page = await browser.newPage()
 
-  const client = await page.target().createCDPSession()
+  const client = await page.createCDPSession()
   const requestInterceptionManager = new RequestInterceptionManager(client)
 
   const interceptionConfig: Interception = {
@@ -315,7 +315,7 @@ async function main() {
   const browser = await puppeteer.launch()
   const page = await browser.newPage()
 
-  const client = await page.target().createCDPSession()
+  const client = await page.createCDPSession()
   const requestInterceptionManager = new RequestInterceptionManager(client)
 
   const interceptionConfig: Interception = {
