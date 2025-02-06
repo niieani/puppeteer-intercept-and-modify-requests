@@ -2,18 +2,15 @@
 import * as http from 'http'
 import getPort from 'get-port'
 import type { Server } from 'http'
-import * as _puppeteer from 'puppeteer'
-import type * as puppeteerType from 'puppeteer-core'
+import * as puppeteer from 'puppeteer'
 import { RequestInterceptionManager } from './main'
-
-const puppeteer = _puppeteer as unknown as typeof puppeteerType
 
 let server: Server
 let port = 3_000
-let browser: puppeteerType.Browser
-let page: puppeteerType.Page
-let client: puppeteerType.CDPSession
-let browserClient: puppeteerType.CDPSession
+let browser: puppeteer.Browser
+let page: puppeteer.Page
+let client: puppeteer.CDPSession
+let browserClient: puppeteer.CDPSession
 let manager: RequestInterceptionManager
 
 const host = 'localhost'

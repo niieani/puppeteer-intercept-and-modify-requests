@@ -12102,7 +12102,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer-core@npm:21.5.0, puppeteer-core@npm:^21.5.0":
+"puppeteer-core@npm:21.5.0":
   version: 21.5.0
   resolution: "puppeteer-core@npm:21.5.0"
   dependencies:
@@ -12124,7 +12124,6 @@ __metadata:
     escape-string-regexp: "npm:^4.0.0"
     get-port: "npm:^5.0.0"
     puppeteer: "npm:^21.5.0"
-    puppeteer-core: "npm:^21.5.0"
   languageName: unknown
   linkType: soft
 

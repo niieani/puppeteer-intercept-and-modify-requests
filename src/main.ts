@@ -1,6 +1,6 @@
 /* eslint-disable no-continue,no-await-in-loop,node/no-unpublished-import */
 import { promisify } from 'util'
-import type { CDPSession, Protocol } from 'puppeteer-core'
+import type { CDPSession, Protocol } from 'puppeteer'
 // eslint-disable-next-line import/no-unresolved
 import { getUrlPatternRegExp } from './urlPattern.js'
 
